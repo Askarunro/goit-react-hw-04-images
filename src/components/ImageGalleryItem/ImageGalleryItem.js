@@ -1,23 +1,24 @@
-import i from './ImageGalleryItem.module.css'
-import React,{Component} from 'react'
+import i from "./ImageGalleryItem.module.css";
 
-class Item extends Component {
+function Item({ hits, open, toggleModal }) {
+  const onClick = (evt) => {
+    open(evt.currentTarget.dataset.url);
+  };
 
-  onClick=(e)=>{
-    this.props.open(e.currentTarget.dataset.url)
-  }
-
-render(){
   return (
     <>
-      {this.props.hits.map((hit) => (
-          <li key={hit.id} className={i.item} onClick={this.props.toggleModal}>
-              <img src={hit.webformatURL} className={i.img} data-url={hit.largeImageURL}  onClick={this.onClick}/>
-          </li>
-        ))}
+      {hits.map((hit) => (
+        <li key={hit.id} className={i.item} onClick={toggleModal}>
+          <img
+            src={hit.webformatURL}
+            className={i.img}
+            data-url={hit.largeImageURL}
+            onClick={onClick}
+          />
+        </li>
+      ))}
     </>
   );
-}
 }
 
 export default Item;
