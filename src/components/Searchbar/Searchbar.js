@@ -1,51 +1,48 @@
 import s from "./Searchbar.module.css";
-import React, { Component } from "react";
+// import React, { Component } from "react";
+import { useState } from "react";
 
-class SearchBar extends Component {
-  state = {
-    name: "",
+function SearchBar({ submit }) {
+  const [name, setName] = useState("");
+
+  const onChangeInput = (e) => {
+    setName(e.currentTarget.value);
   };
 
-  onChangeInput = (e) => {
-    this.state.name = e.currentTarget.value;
+  const reset = () => {
+    setName("");
+    document.querySelector("input").value = "";
   };
 
-  reset = () => {
-    this.setState({ name: "" });
-    document.querySelector('input').value=""
-  };
-
-  onSubmit = (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
-    if (this.state.name.trim() === "") {
-      alert('please write word')
+    if (name.trim() === "") {
+      alert("please write word");
     }
-    this.props.onSubmit(this.state.name);
-    this.reset();
+    submit(name);
+    reset();
   };
 
-  render() {
-    return (
-      <>
-        <header className={s.Searchbar}>
-          <form className={s.SearchForm} onSubmit={this.onSubmit}>
-            <button type="submit" className={s.button}>
-              <span className={s.label}>Search</span>
-            </button>
+  return (
+    <>
+      <header className={s.Searchbar}>
+        <form className={s.SearchForm} onSubmit={onSubmit}>
+          <button type="submit" className={s.button}>
+            <span className={s.label}>Search</span>
+          </button>
 
-            <input
-              className={s.input}
-              type="text"
-              //   autocomplete="off"
-              //   autofocus
-              placeholder="Search images and photos"
-              onChange={this.onChangeInput}
-            />
-          </form>
-        </header>
-      </>
-    );
-  }
+          <input
+            className={s.input}
+            type="text"
+            //   autocomplete="off"
+            //   autofocus
+            placeholder="Search images and photos"
+            onChange={onChangeInput}
+          />
+        </form>
+      </header>
+    </>
+  );
 }
 
 export default SearchBar;
