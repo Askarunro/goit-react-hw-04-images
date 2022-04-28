@@ -100,7 +100,7 @@ class App extends Component {
     const { hits, status, showModal, imgLarge, more } = this.state;
     return (
       <>
-        <SearchBar onSubmit={this.onSubmit} />
+        <SearchBar submit={this.onSubmit} />
         {status === "pending" && <Loader />}
         {status === "error" && (
           <h2>
