@@ -1,6 +1,7 @@
 import "./App.css";
 // import { nanoid } from "nanoid";
 import React, { Component } from "react";
+import { useState, useEffect, useReducer, useRef } from "react";
 import api from "./services";
 import SearchBar from "./components/Searchbar";
 import Loader from "./components/Loader";
@@ -12,119 +13,120 @@ import axios from "axios";
 axios.defaults.baseURL =
   " https://pixabay.com/api/?key=24828507-89537ba0cc73f2aa36f96abcf&image_type=photo&orientation=horizontal";
 
-class App extends Component {
-  state = {
-    searchName: "",
-    hits: null,
-    status: "idle",
-    showModal: false,
-    imgLarge: "",
-    page: 1,
-    more: false,
-  };
+const itemList = 12;
 
-  onSubmit = (data) => {
-    this.setState({ searchName: data });
-  };
+function App() {
+  const [searchName, setSearchName] = useState("");
+  // const [searchName,dispatch]=useReducer(nameReducer, "");
+  const [hits, setHits] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [showModal, setShowModal] = useState(false);
+  const [imgLarge, setImgLarge] = useState("");
+  const [page, setPage] = useState(1);
+  const [more, setMore] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (prevState.searchName !== this.state.searchName) {
-      try {
-        this.state.status = "pending";
-        this.state.page = 1;
-        const search = this.state.searchName;
+  //  const onSubmit = (data) => {
+  //   dispatch(data)
+  //   };
 
-        const page = this.state.page;
-        this.setState({ loading: true });
-        // const response = await axios.get(
-        //   `/search?query=react&page=${page}&per_page=12&q=${search}&total`
-        // );
-        const response = await api(search, page);
-        this.setState({ loading: false });
+  const prevNameSearch = useRef();
+  const prevPage = useRef();
 
-        this.setState({ hits: response.data.hits });
-        this.setState(
-          response.data.total ? { status: "resolved" } : { status: "error" }
-        );
-        this.setState(
-          response.data.total > 12 ? { more: true } : { more: false }
-        );
-      } catch {
-        this.state.status = "error";
-      }
+  const onSubmit = (data) => {
+    prevNameSearch.current = searchName;
+
+    if (data !== searchName) {
+      setSearchName(data);
+      setHits([]);
+      setPage(1);
+      setStatus("idle");
     }
-    if (
-      prevState.searchName === this.state.searchName &&
-      prevState.page !== this.state.page
-    ) {
-      try {
-        this.state.status = "pending";
-        const search = this.state.searchName;
-        const page = this.state.page;
-        // const response = await axios.get(
-        //   `/search?query=react&page=${page}&per_page=12&q=${search}`
-        // );
-        const response = await api(search, page);
-        this.setState((prevState) => ({
-          hits: [...prevState.hits, ...response.data.hits],
-          status: "resolved",
-        }));
-        this.setState(
-          response.data.total!==this.state.hits.length ? { more: true } : { more: false }
-        );
-      } catch {
-        if (this.state.hits <= 1) {
-          this.state.status = "error";
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (
+        prevNameSearch.current !== searchName &&
+        searchName !== "" &&
+        page === 1
+      ) {
+        try {
+          setStatus("pending");
+          setPage(1);
+          const search = searchName;
+          const pageNumber = page;
+          setLoading(true);
+          const response = await api(search, pageNumber);
+          setLoading(false);
+          setHits(response.data.hits);
+          setStatus("resolved");
+          response.data.total ? setStatus("resolved") : setStatus("error");
+          response.data.total > itemList ? setMore(true) : setMore(false);
+          return response;
+        } catch {
+          setStatus("error");
         }
       }
-    }
-  }
+      if (prevNameSearch.current !== searchName && page > 1) {
+        try {
+          setStatus("pending");
+          const search = searchName;
+          const pageNumber = page;
+          const response = await api(search, pageNumber);
+          setHits([...hits, ...response.data.hits]);
+          setStatus("resolved");
+          response.data.total !== hits.length ? setMore(true) : setMore(false);
+          return response;
+        } catch {
+          if (hits <= 1) {
+            setStatus("error");
+          }
+        }
+      }
+    };
+    fetchData();
+  }, [searchName, page]);
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+  const toggleModal = () => {
+    setShowModal(!showModal);
   };
 
-  handleImgClick = (data) => {
-    this.setState({ imgLarge: data });
+  const handleImgClick = (data) => {
+    setImgLarge(data);
   };
 
-  handleMoreClick = () => {
-    this.setState((prevState) => {
-      return { page: prevState.page + 1 };
-    });
+  const handleMoreClick = () => {
+    prevPage.current = page;
+    setPage(page + 1);
   };
 
-  render() {
-    const { hits, status, showModal, imgLarge, more } = this.state;
-    return (
-      <>
-        <SearchBar submit={this.onSubmit} />
-        {status === "pending" && <Loader />}
-        {status === "error" && (
-          <h2>
-            Sorry, but there is no such result. Please specify another request.
-          </h2>
-        )}
-        {status === "resolved" && (
-          <>
-            <ImageGallery
-              hits={hits}
-              openModal={this.handleImgClick}
-              onClick={this.toggleModal}
-            />
-            {more && <Button onClick={this.handleMoreClick} />}
-          </>
-        )}
-        {showModal && (
-          <Modal onClose={this.toggleModal}>
-            <img src={imgLarge} className="img" />
-          </Modal>
-        )}
-      </>
-    );
-  }
+  return (
+    <>
+      <SearchBar submit={onSubmit} />
+      {status === "pending" && <Loader />}
+      {status === "error" && (
+        <h2>
+          Sorry, but there is no such result. Please specify another request.
+        </h2>
+      )}
+      {status === "resolved" && (
+        <>
+          <ImageGallery
+            hits={hits}
+            openModal={handleImgClick}
+            onClick={toggleModal}
+          />
+          {more && <Button onClick={handleMoreClick} />}
+        </>
+      )}
+      {showModal && (
+        <Modal onClose={toggleModal}>
+          <img src={imgLarge} className="img" />
+        </Modal>
+      )}
+    </>
+  );
 }
 
 export default App;
